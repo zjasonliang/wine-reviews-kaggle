@@ -34,6 +34,10 @@ def dump_data_remove_duplicate_and_na():
         parsed_data.dropna(subset=['description', 'points'])
 
         data = parsed_data.to_dict('records')
+
+        import math
+        data = [d for d in data if not math.isnan(d['price'])]
+
         random.shuffle(data)
 
         if not os.path.isfile(pickle_filename):
@@ -171,8 +175,8 @@ def raw_texts_to_vector(text_list, vocabulary=None, min_df=50, use_tfidf=True, n
                                          # token_pattern=r'(?u)\b\w+\b',
                                          )
             csr_matrix = vectorizer.fit_transform(text_list)
-
-            return csr_matrix, None, None
+            vocabulary = vectorizer.vocabulary_
+            return csr_matrix, None, vocabulary
         else:
             vectorizer = CountVectorizer(vocabulary=vocabulary,
                                          tokenizer=tokenizer,
@@ -181,3 +185,45 @@ def raw_texts_to_vector(text_list, vocabulary=None, min_df=50, use_tfidf=True, n
             csr_matrix = vectorizer.fit_transform(text_list)
 
             return csr_matrix, None, None
+
+
+def append_new_features(X, data, scaler=None):
+    """
+    Append new feature columns to the existing feature matrix X.
+
+    New features include:
+    - Price
+    - Description length
+    - Winery
+
+    :param X: Feature matrix, where each row is a feature vector of a data example
+    :param data: raw data
+    :return: new feature matrix
+    """
+    from scipy.sparse import hstack
+    import numpy
+    import math
+
+    new_features = list()
+    new_features.append([len(datum['description']) for datum in data])
+    new_features.append([datum['price'] for datum in data])
+
+    # Transpose doc_lengths
+    new_features = numpy.array(new_features)
+    new_features = new_features.transpose()
+
+    X = hstack((X, new_features))
+
+    # Now do feature scaling
+    from sklearn import preprocessing
+
+    # For training data
+    if scaler is None:
+        scaler = preprocessing.MaxAbsScaler()
+        X = scaler.fit_transform(X)
+        return X, scaler
+    # For test data
+    else:
+        X = scaler.transform(X)
+        return X, None
+

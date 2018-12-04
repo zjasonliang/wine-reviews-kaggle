@@ -59,11 +59,27 @@ def baseline(lam=1, vocab_size=20000, use_tfidf=True):
     predictions = model.predict(X_valid)
 
     print('Lambda =', lam)
-    print('MSE on valid:', mse(y_valid, predictions))
+
+    _mse = mse(y_valid, predictions)
+    print('MSE on valid:', _mse)
+    return _mse
 
 
 if __name__ == '__main__':
-    lams = [0, 0.01, 0.1, 1, 2, 3, 5, 7, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
-    for lam in lams:
-        baseline(lam=lam, vocab_size=5000, use_tfidf=False)
+    vocab_sizes = [1000, 2000, 3000, 4000, 5000,
+                   6000, 7000, 8000, 9000, 10000,
+                   11000, 12000, 13000, 14000, 15000,
+                   16000, 17000, 18000, 19000, 20000]
 
+    mses = []
+
+    for vocab_size in vocab_sizes:
+        ret = baseline(lam=0, vocab_size=vocab_size, use_tfidf=False)
+        mses.append(ret)
+
+    import matplotlib.pyplot as plt
+
+    plt.plot(vocab_sizes, mses)
+    plt.xlabel('Vocabulary Size')
+    plt.ylabel('MSE')
+    plt.savefig('vocab_size_mse.png')
